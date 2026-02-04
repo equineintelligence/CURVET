@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curvet - Veterinary Patient Management</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a4a3a 0%, #063428 100%);
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .app-container {
+            background: linear-gradient(135deg, #0a5a45 0%, #074033 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        input, textarea, select {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff !important;
+        }
+        
+        input::selection, textarea::selection {
+            background: rgba(16, 185, 129, 0.4);
+            color: #ffffff;
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            outline: none;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo-text {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+        }
+        
+        .logo-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        
+        @media (max-width: 768px) {
+            .logo-text {
+                font-size: 2rem;
+            }
+            
+            .logo-subtitle {
+                font-size: 0.7rem;
+                letter-spacing: 2px;
+            }
+            
+            .mobile-stack {
+                flex-direction: column;
+            }
+            
+            .mobile-full {
+                width: 100%;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem;
+            }
+            
+            .mobile-hidden {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="app-container">
+    <div id="app"></div>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script type="module">
+
+        // App State with Demo Data
+        let state = {
+            view: 'home',
+            clients: [
+                {
+                    id: 'c1',
+                    name: 'Sarah Johnson',
+                    phone: '+27 82 123 4567',
+                    email: 'sarah.johnson@email.com',
+                    patientCount: 2
+                },
+                {
+                    id: 'c2',
+                    name: 'Michael Peters',
+                    phone: '+27 83 456 7890',
+                    email: 'michael.peters@email.com',
+                    patientCount: 1
+                },
+                {
+                    id: 'c3',
+                    name: 'Emma Williams',
+                    phone: '+27 84 789 0123',
+                    email: 'emma.williams@email.com',
+                    patientCount: 3
+                }
+            ],
+            patients: [
+                {
+                    id: 'p1',
+                    name: 'Max',
+                    owner: 'Sarah Johnson',
+                    species: 'Dog',
+                    breed: 'Golden Retriever',
+                    age: 5,
+                    weight: 32,
+                    clientId: 'c1',
+                    notes: [
+                        {
+                            id: 'n1',
+                            date: '2025-01-15',
+                            content: 'Annual checkup completed. Patient is in excellent health. Vaccinations updated. Weight is appropriate for breed and age. Dental condition is good with minimal tartar buildup. Recommended dental cleaning in 6 months.'
+                        },
+                        {
+                            id: 'n2',
+                            date: '2024-07-20',
+                            content: 'Routine vaccination visit. Patient presented with slight limp in right front leg. Physical examination revealed minor strain, likely from overexertion during play. Prescribed rest for 5 days and anti-inflammatory medication. Follow-up in 2 weeks if symptoms persist.'
+                        }
+                    ]
+                },
+                {
+                    id: 'p2',
+                    name: 'Luna',
+                    owner: 'Sarah Johnson',
+                    species: 'Cat',
+                    breed: 'Persian',
+                    age: 3,
+                    weight: 4.5,
+                    clientId: 'c1',
+                    notes: [
+                        {
+                            id: 'n3',
+                            date: '2025-02-01',
+                            content: 'Presented for skin irritation around neck area. Examination revealed flea allergy dermatitis. Owner reported recent outdoor exposure. Prescribed topical corticosteroid cream and flea prevention treatment. Discussed importance of regular flea control. Recheck in 10 days.'
+                        }
+                    ]
+                },
+                {
+                    id: 'p3',
+                    name: 'Charlie',
+                    owner: 'Michael Peters',
+                    species: 'Dog',
+                    breed: 'Labrador',
+                    age: 7,
+                    weight: 35,
+                    clientId: 'c2',
+                    notes: [
+                        {
+                            id: 'n4',
+                            date: '2025-01-28',
+                            content: 'Senior wellness exam. Blood work shows slightly elevated kidney values. Urinalysis normal. Discussed dietary modifications and increased water intake. Started on kidney support supplement. Owner educated on signs of kidney disease progression. Recheck blood work in 3 months.'
+                        }
+                    ]
+                },
+                {
+                    id: 'p4',
+                    name: 'Bella',
+                    owner: 'Emma Williams',
+                    species: 'Dog',
+                    breed: 'Beagle',
+                    age: 2,
+                    weight: 12,
+                    clientId: 'c3',
+                    notes: []
+                },
+                {
+                    id: 'p5',
+                    name: 'Whiskers',
+                    owner: 'Emma Williams',
+                    species: 'Cat',
+                    breed: 'Domestic Shorthair',
+                    age: 4,
+                    weight: 5.2,
+                    clientId: 'c3',
+                    notes: [
+                        {
+                            id: 'n5',
+                            date: '2025-01-10',
+                            content: 'Spay surgery performed successfully. Patient recovered well from anesthesia. Post-operative pain management initiated. Discussed wound care and activity restriction for 10-14 days. Elizabethan collar fitted. Suture removal scheduled in 2 weeks.'
+                        }
+                    ]
+                },
+                {
+                    id: 'p6',
+                    name: 'Rocky',
+                    owner: 'Emma Williams',
+                    species: 'Rabbit',
+                    breed: 'Holland Lop',
+                    age: 1.5,
+                    weight: 1.8,
+                    clientId: 'c3',
+                    notes: []
+                }
+            ],
+            selectedClient: null,
+            selectedPatient: null,
+            searchTerm: '',
+            isRecording: false,
+            transcript: '',
+            recognition: null,
+            showClientModal: false,
+            showPatientModal: false,
+            editingClient: null,
+            editingPatient: null,
+            showNoteModal: false,
+            editingNote: null,
+            nextClientId: 4,
+            nextPatientId: 7,
+            nextNoteId: 6
+        };
+
+        // Initialize Speech Recognition
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recog = new SpeechRecognition();
+                recog.continuous = true;
+                recog.interimResults = true;
+                recog.lang = 'en-US';
+
+                recog.onresult = (event) => {
+                    let finalTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + ' ';
+                        }
+                    }
+                    if (finalTranscript) {
+                        state.transcript += finalTranscript;
+                        render();
+                    }
+                };
+
+                recog.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    state.isRecording = false;
+                    render();
+                };
+
+                state.recognition = recog;
+            }
+        }
+
+        // Local Storage Functions
+        function saveToLocalStorage() {
+            try {
+                const dataToSave = {
+                    clients: state.clients,
+                    patients: state.patients,
+                    nextClientId: state.nextClientId,
+                    nextPatientId: state.nextPatientId,
+                    nextNoteId: state.nextNoteId
+                };
+                // Note: In demo mode, data persists in memory only
+                console.log('Demo mode: Data saved to memory');
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        async function loadClients() {
+            // Data already loaded in state
+            render();
+        }
+
+        async function loadPatients() {
+            // Data already loaded in state
+            render();
+        }
+
+        async function addClient(clientData) {
+            if (state.editingClient) {
+                const index = state.clients.findIndex(c => c.id === state.editingClient.id);
+                if (index !== -1) {
+                    state.clients[index] = { ...state.clients[index], ...clientData };
+                }
+            } else {
+                const newClient = {
+                    id: 'c' + state.nextClientId++,
+                    ...clientData,
+                    patientCount: 0
+                };
+                state.clients.push(newClient);
+            }
+            saveToLocalStorage();
+            state.showClientModal = false;
+            state.editingClient = null;
+            render();
+        }
+
+        async function deleteClient(clientId) {
+            if (confirm('Delete this client? Patients will not be deleted.')) {
+                state.clients = state.clients.filter(c => c.id !== clientId);
+                saveToLocalStorage();
+                render();
+            }
+        }
+
+        async function addPatient(patientData) {
+            if (state.editingPatient) {
+                const index = state.patients.findIndex(p => p.id === state.editingPatient.id);
+                if (index !== -1) {
+                    state.patients[index] = { ...state.patients[index], ...patientData };
+                }
+            } else {
+                const newPatient = {
+                    id: 'p' + state.nextPatientId++,
+                    ...patientData,
+                    notes: []
+                };
+                state.patients.push(newPatient);
+                
+                const client = state.clients.find(c => c.id === patientData.clientId);
+                if (client) {
+                    client.patientCount = (client.patientCount || 0) + 1;
+                }
+            }
+            saveToLocalStorage();
+            state.showPatientModal = false;
+            state.editingPatient = null;
+            render();
+        }
+
+        async function deletePatient(patientId) {
+            if (confirm('Delete this patient and all associated medical records?')) {
+                const patient = state.patients.find(p => p.id === patientId);
+                state.patients = state.patients.filter(p => p.id !== patientId);
+                
+                if (patient && patient.clientId) {
+                    const client = state.clients.find(c => c.id === patient.clientId);
+                    if (client) {
+                        client.patientCount = Math.max(0, (client.patientCount || 0) - 1);
+                    }
+                }
+                
+                saveToLocalStorage();
+                render();
+            }
+        }
+
+        async function saveNote() {
+            if (!state.selectedPatient || !state.transcript.trim()) return;
+
+            const newNote = {
+                id: 'n' + state.nextNoteId++,
+                date: new Date().toISOString().split('T')[0],
+                content: state.transcript.trim()
+            };
+
+            const patient = state.patients.find(p => p.id === state.selectedPatient.id);
+            if (patient) {
+                if (!patient.notes) patient.notes = [];
+                patient.notes.push(newNote);
+            }
+            
+            state.transcript = '';
+            saveToLocalStorage();
+            state.selectedPatient = state.patients.find(p => p.id === state.selectedPatient.id);
+            alert('Medical note saved successfully!');
+            render();
+        }
+
+        function updateButtonStates() {
+            const hasContent = state.transcript && state.transcript.trim().length > 0;
+            const saveBtn = document.getElementById('save-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const exportBtn = document.getElementById('export-btn');
+            
+            if (saveBtn) saveBtn.disabled = !hasContent;
+            if (copyBtn) copyBtn.disabled = !hasContent;
+            if (exportBtn) exportBtn.disabled = !hasContent;
+        }
+
+        async function deleteNote(noteId) {
+            if (!confirm('Delete this medical record? This action cannot be undone.')) return;
+
+            const updatedNotes = state.selectedPatient.notes.filter(note => note.id !== noteId);
+            await updateDoc(doc(db, 'patients', state.selectedPatient.id), { notes: updatedNotes });
+            
+            await loadPatients();
+            state.selectedPatient = state.patients.find(p => p.id === state.selectedPatient.id);
+            alert('Record deleted successfully!');
+            render();
+        }
+
+        async function updateNote(noteId, newContent) {
+            const updatedNotes = state.selectedPatient.notes.map(note => 
+                note.id === noteId ? { ...note, content: newContent, date: note.date } : note
+            );
+            await updateDoc(doc(db, 'patients', state.selectedPatient.id), { notes: updatedNotes });
+            
+            await loadPatients();
+            state.selectedPatient = state.patients.find(p => p.id === state.selectedPatient.id);
+            state.showNoteModal = false;
+            state.editingNote = null;
+            alert('Record updated successfully!');
+            render();
+        }
+
+        // UI Helper Functions
+        function startRecording() {
+            if (state.recognition) {
+                state.transcript = '';
+                state.recognition.start();
+                state.isRecording = true;
+                render();
+            }
+        }
+
+        function stopRecording() {
+            if (state.recognition) {
+                state.recognition.stop();
+                state.isRecording = false;
+                render();
+            }
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(state.transcript);
+            alert('Copied to clipboard!');
+        }
+
+        function exportReport() {
+            const content = `CURVET VETERINARY CLINIC - MEDICAL EXAMINATION REPORT
+
+Patient: ${state.selectedPatient?.name}
+Owner: ${state.selectedPatient?.owner}
+Species: ${state.selectedPatient?.species}
+Breed: ${state.selectedPatient?.breed}
+Age: ${state.selectedPatient?.age} years
+Weight: ${state.selectedPatient?.weight} kg
+Date: ${new Date().toLocaleDateString()}
+
+EXAMINATION NOTES:
+${state.transcript}
+
+---
+Curvet Veterinary Clinic
+Professional Animal Care`;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Curvet_${state.selectedPatient?.name}_report_${new Date().toISOString().split('T')[0]}.txt`;
+            a.click();
+        }
+
+        // Export all notes to Word
+        function exportAllNotesToWord() {
+            if (!state.selectedPatient || !state.selectedPatient.notes || state.selectedPatient.notes.length === 0) return;
+
+            const patient = state.selectedPatient;
+            const client = state.clients.find(c => c.id === patient.clientId);
+
+            let htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Medical Records - ${patient.name}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 3px solid #10b981; padding-bottom: 20px; }
+        .header h1 { color: #10b981; margin: 0; font-size: 28px; }
+        .header p { color: #666; margin: 5px 0; }
+        .info-box { margin: 30px 0; padding: 20px; background: #f0fdf4; border-radius: 5px; border-left: 4px solid #10b981; }
+        .info-box p { margin: 8px 0; }
+        .record { margin: 30px 0; padding: 20px; border-left: 4px solid #10b981; background: #fafafa; }
+        .record h3 { margin-top: 0; color: #10b981; }
+        .record-content { white-space: pre-wrap; line-height: 1.6; }
+        .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ccc; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CURVET VETERINARY CLINIC</h1>
+        <p>Complete Medical Records</p>
+    </div>
+    
+    <div class="info-box">
+        <h2>Patient Information</h2>
+        <p><strong>Name:</strong> ${patient.name}</p>
+        <p><strong>Owner:</strong> ${patient.owner}</p>
+        <p><strong>Species:</strong> ${patient.species || 'Unknown'}</p>
+        <p><strong>Breed:</strong> ${patient.breed || 'Unknown'}</p>
+        <p><strong>Age:</strong> ${patient.age || 0} years</p>
+        <p><strong>Weight:</strong> ${patient.weight || 'N/A'} kg</p>
+        <p><strong>Client:</strong> ${client?.name || 'Unknown'} ${client?.phone ? `(${client.phone})` : ''}</p>
+        <p><strong>Total Records:</strong> ${patient.notes.length}</p>
+        <p><strong>Report Generated:</strong> ${new Date().toLocaleString()}</p>
+    </div>
+    
+    <h2>Medical Records</h2>
+`;
+
+            [...patient.notes].reverse().forEach((note, index) => {
+                htmlContent += `
+    <div class="record">
+        <h3>Record ${index + 1} - ${new Date(note.date).toLocaleDateString()}</h3>
+        <div class="record-content">${note.content}</div>
+    </div>
+`;
+            });
+
+            htmlContent += `
+    <div class="footer">
+        <p><strong>Curvet Veterinary Clinic</strong></p>
+        <p>Professional Animal Care</p>
+    </div>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'application/vnd.ms-word' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Curvet_${patient.name}_Medical_Records_${new Date().toISOString().split('T')[0]}.doc`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Export all notes to PDF
+        function exportAllNotesToPDF() {
+            if (!state.selectedPatient || !state.selectedPatient.notes || state.selectedPatient.notes.length === 0) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const patient = state.selectedPatient;
+            const client = state.clients.find(c => c.id === patient.clientId);
+            
+            let yPos = 20;
+            const pageHeight = doc.internal.pageSize.height;
+            const margin = 20;
+            const lineHeight = 7;
+
+            // Header
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(16, 185, 129);
+            doc.text('CURVET VETERINARY CLINIC', 105, yPos, { align: 'center' });
+            yPos += 8;
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Complete Medical Records', 105, yPos, { align: 'center' });
+            yPos += 15;
+
+            // Patient Information Box
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Patient Information', margin, yPos);
+            yPos += 8;
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(`Name: ${patient.name}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Owner: ${patient.owner}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Species: ${patient.species || 'Unknown'}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Breed: ${patient.breed || 'Unknown'}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Age: ${patient.age || 0} years`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Weight: ${patient.weight || 'N/A'} kg`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Client: ${client?.name || 'Unknown'} ${client?.phone ? `(${client.phone})` : ''}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Total Records: ${patient.notes.length}`, margin, yPos);
+            yPos += lineHeight;
+            doc.text(`Report Generated: ${new Date().toLocaleString()}`, margin, yPos);
+            yPos += 15;
+
+            // Records
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Medical Records', margin, yPos);
+            yPos += 10;
+
+            [...patient.notes].reverse().forEach((note, index) => {
+                if (yPos > pageHeight - 40) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.text(`Record ${index + 1} - ${new Date(note.date).toLocaleDateString()}`, margin, yPos);
+                yPos += 8;
+
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'normal');
+                
+                const splitContent = doc.splitTextToSize(note.content, 170);
+                splitContent.forEach(line => {
+                    if (yPos > pageHeight - 20) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    doc.text(line, margin, yPos);
+                    yPos += lineHeight;
+                });
+
+                yPos += 10;
+            });
+
+            doc.save(`Curvet_${patient.name}_Medical_Records_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+
+        // Render Functions
+        function renderHome() {
+            return `
+                <div class="max-w-6xl mx-auto p-4 md:p-6">
+                    <div class="logo-container">
+                        <div class="logo-text">CURVET</div>
+                        <div class="logo-subtitle">Veterinary Care Excellence</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-6 md:p-8 mb-6 md:mb-8">
+                        <h1 class="text-3xl md:text-4xl font-bold text-white mb-3 text-center">Patient Management System</h1>
+                        <p class="text-gray-200 text-center text-base md:text-lg">Professional voice-transcribed medical records</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                        <button onclick="navigateTo('clients')" class="glass-card p-8 md:p-10 rounded-2xl">
+                            <i data-lucide="users" class="w-12 h-12 md:w-16 md:h-16 text-emerald-400 mb-4 md:mb-6 mx-auto"></i>
+                            <h2 class="text-xl md:text-2xl font-bold text-white mb-2 md:mb-3">Clients</h2>
+                            <p class="text-gray-200 mb-3 md:mb-4 text-sm md:text-base">Manage pet owners & contacts</p>
+                            <div class="mt-4 md:mt-6 text-3xl md:text-4xl font-bold text-emerald-400">${state.clients.length}</div>
+                        </button>
+
+                        <button onclick="navigateTo('patients')" class="glass-card p-8 md:p-10 rounded-2xl">
+                            <i data-lucide="heart-pulse" class="w-12 h-12 md:w-16 md:h-16 text-emerald-400 mb-4 md:mb-6 mx-auto"></i>
+                            <h2 class="text-xl md:text-2xl font-bold text-white mb-2 md:mb-3">Patients</h2>
+                            <p class="text-gray-200 mb-3 md:mb-4 text-sm md:text-base">Search and manage animals</p>
+                            <div class="mt-4 md:mt-6 text-3xl md:text-4xl font-bold text-emerald-400">${state.patients.length}</div>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderClients() {
+            const filtered = state.clients.filter(c => 
+                c.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+                (c.email && c.email.toLowerCase().includes(state.searchTerm.toLowerCase()))
+            );
+
+            return `
+                <div class="max-w-6xl mx-auto p-4 md:p-6">
+                    <div class="logo-container">
+                        <div class="logo-text">CURVET</div>
+                        <div class="logo-subtitle">Veterinary Care Excellence</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-3 md:gap-0">
+                            <button onclick="navigateTo('home')" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Back
+                            </button>
+                            <h1 class="text-2xl md:text-3xl font-bold text-white">Client Management</h1>
+                            <button onclick="openClientModal()" class="btn-primary px-4 md:px-6 py-2 md:py-3 rounded-lg flex items-center gap-2 w-full md:w-auto justify-center">
+                                <i data-lucide="user-plus" class="w-5 h-5"></i> Add Client
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-4 top-3 md:top-4 w-5 h-5 text-gray-400"></i>
+                            <input type="text" placeholder="Search clients..." value="${state.searchTerm}" 
+                                oninput="updateSearch(this.value)"
+                                class="w-full pl-12 pr-4 py-3 rounded-lg text-base">
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${filtered.map(client => `
+                            <div class="glass-card rounded-xl p-4 md:p-6">
+                                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div class="flex-1">
+                                        <h3 class="text-xl md:text-2xl font-bold text-white mb-2">${client.name}</h3>
+                                        <p class="text-gray-200 text-base md:text-lg">${client.phone || 'No phone'}</p>
+                                        <p class="text-sm text-gray-300">${client.email || 'No email'}</p>
+                                        <p class="text-sm text-emerald-400 mt-2 font-semibold">${client.patientCount || 0} patients</p>
+                                    </div>
+                                    <div class="flex gap-2 md:gap-3">
+                                        <button onclick='editClient(${JSON.stringify(client)})' class="btn-secondary p-2 md:p-3 rounded-lg">
+                                            <i data-lucide="edit-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                        </button>
+                                        <button onclick="deleteClientById('${client.id}')" class="btn-secondary p-2 md:p-3 rounded-lg hover:bg-red-500/20">
+                                            <i data-lucide="trash-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                        </button>
+                                        <button onclick='selectClient(${JSON.stringify(client)})' class="btn-primary px-4 md:px-6 py-2 md:py-3 rounded-lg flex items-center gap-2">
+                                            <span class="hidden md:inline">View Patients</span>
+                                            <span class="md:hidden">Patients</span>
+                                            <i data-lucide="chevron-right" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPatients() {
+            const filtered = state.patients.filter(p => 
+                (!state.selectedClient || p.clientId === state.selectedClient.id) &&
+                (p.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+                 p.owner.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
+                 (p.species && p.species.toLowerCase().includes(state.searchTerm.toLowerCase())))
+            );
+
+            return `
+                <div class="max-w-6xl mx-auto p-4 md:p-6">
+                    <div class="logo-container">
+                        <div class="logo-text">CURVET</div>
+                        <div class="logo-subtitle">Veterinary Care Excellence</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-3 md:gap-0">
+                            <button onclick="backFromPatients()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                                <i data-lucide="arrow-left" class="w-5 h-5"></i> Back
+                            </button>
+                            <h1 class="text-2xl md:text-3xl font-bold text-white text-center flex-1">
+                                ${state.selectedClient ? `${state.selectedClient.name}'s Patients` : 'All Patients'}
+                            </h1>
+                            <button onclick="openPatientModal()" class="btn-primary px-4 md:px-6 py-2 md:py-3 rounded-lg flex items-center gap-2 w-full md:w-auto justify-center">
+                                <i data-lucide="plus" class="w-5 h-5"></i> Add Patient
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <i data-lucide="search" class="absolute left-4 top-3 md:top-4 w-5 h-5 text-gray-400"></i>
+                            <input type="text" placeholder="Search patients..." value="${state.searchTerm}"
+                                oninput="updateSearch(this.value)"
+                                class="w-full pl-12 pr-4 py-3 rounded-lg text-base">
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${filtered.map(patient => {
+                            const client = state.clients.find(c => c.id === patient.clientId);
+                            return `
+                                <div class="glass-card rounded-xl p-4 md:p-6">
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div class="flex-1">
+                                            <h3 class="text-xl md:text-2xl font-bold text-white mb-2">${patient.name}</h3>
+                                            <p class="text-gray-200 text-sm md:text-base">Owner: ${patient.owner}</p>
+                                            <p class="text-sm text-gray-300">${patient.species || 'Unknown species'} • ${patient.breed || 'Unknown breed'}</p>
+                                            <p class="text-sm text-gray-300">${patient.age || 0} years • ${patient.weight || 'N/A'} kg</p>
+                                            <p class="text-sm text-gray-300">Client: ${client?.name || 'No client'}</p>
+                                            <p class="text-sm text-emerald-400 mt-2 font-semibold">${(patient.notes || []).length} medical records</p>
+                                        </div>
+                                        <div class="flex gap-2 md:gap-3">
+                                            <button onclick='editPatient(${JSON.stringify(patient)})' class="btn-secondary p-2 md:p-3 rounded-lg">
+                                                <i data-lucide="edit-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                            </button>
+                                            <button onclick="deletePatientById('${patient.id}')" class="btn-secondary p-2 md:p-3 rounded-lg hover:bg-red-500/20">
+                                                <i data-lucide="trash-2" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                            </button>
+                                            <button onclick='selectPatient(${JSON.stringify(patient)})' class="btn-primary px-4 md:px-6 py-2 md:py-3 rounded-lg flex items-center gap-2">
+                                                <span class="hidden md:inline">View Records</span>
+                                                <span class="md:hidden">Records</span>
+                                                <i data-lucide="chevron-right" class="w-4 h-4 md:w-5 md:h-5"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNotes() {
+            if (!state.selectedPatient) return '';
+
+            return `
+                <div class="max-w-6xl mx-auto p-4 md:p-6">
+                    <div class="logo-container">
+                        <div class="logo-text">CURVET</div>
+                        <div class="logo-subtitle">Veterinary Care Excellence</div>
+                    </div>
+                    
+                    <div class="glass-card rounded-2xl p-4 md:p-6 mb-6 md:mb-8">
+                        <button onclick="backToPatients()" class="btn-secondary px-4 py-2 rounded-lg flex items-center gap-2 mb-4 md:mb-6">
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i> Back to Patients
+                        </button>
+                        <h1 class="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">${state.selectedPatient.name}</h1>
+                        <div class="text-gray-200 space-y-2 text-sm md:text-base">
+                            <p>Owner: ${state.selectedPatient.owner}</p>
+                            <p>Species: ${state.selectedPatient.species || 'Unknown'} • Breed: ${state.selectedPatient.breed || 'Unknown'}</p>
+                            <p>${state.selectedPatient.age || 0} years old • Weight: ${state.selectedPatient.weight || 'N/A'} kg</p>
+                            <p class="text-emerald-400 font-semibold">${(state.selectedPatient.notes || []).length} previous medical records</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 md:p-8 mb-6 md:mb-8">
+                        <h2 class="text-xl md:text-2xl font-bold text-white mb-4 md:mb-6">New Medical Examination</h2>
+                        
+                        <div class="flex flex-col md:flex-row gap-3 md:gap-4 mb-4 md:mb-6">
+                            ${!state.isRecording ? `
+                                <button onclick="startRecordingVoice()" ${!state.recognition ? 'disabled' : ''}
+                                    class="btn-primary px-6 md:px-8 py-3 md:py-4 rounded-xl flex items-center justify-center gap-3 font-semibold disabled:opacity-30 disabled:cursor-not-allowed text-base md:text-lg">
+                                    <i data-lucide="mic" class="w-5 h-5 md:w-6 md:h-6"></i> Start Recording
+                                </button>
+                            ` : `
+                                <button onclick="stopRecordingVoice()" 
+                                    class="bg-red-600 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl hover:bg-red-700 flex items-center justify-center gap-3 font-semibold animate-pulse text-base md:text-lg">
+                                    <i data-lucide="square" class="w-5 h-5 md:w-6 md:h-6"></i> Stop Recording
+                                </button>
+                            `}
+                            <span class="text-gray-300 text-xs md:text-sm flex items-center justify-center md:justify-start">Optional - You can also type directly below</span>
+                        </div>
+
+                        ${!state.recognition ? '<p class="text-yellow-400 text-xs md:text-sm mb-4 md:mb-6">Speech recognition not available in this browser. You can still type notes directly.</p>' : ''}
+
+                        <textarea id="transcript-area" oninput="updateTranscript(this.value)" 
+                            placeholder="Medical examination notes will appear here... You can also type or edit directly."
+                            class="w-full h-60 md:h-80 p-4 md:p-6 rounded-xl resize-none text-base md:text-lg">${state.transcript}</textarea>
+
+                        <div class="flex flex-col md:flex-row gap-3 mt-4 md:mt-6">
+                            <button onclick="saveNoteToDb()" id="save-btn"
+                                class="btn-primary px-6 md:px-8 py-3 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed font-semibold text-base md:text-lg">
+                                Save Medical Note
+                            </button>
+                            <button onclick="copyText()" id="copy-btn"
+                                class="btn-secondary px-6 py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-30">
+                                <i data-lucide="copy" class="w-5 h-5"></i> Copy
+                            </button>
+                            <button onclick="exportReportFile()" id="export-btn"
+                                class="btn-secondary px-6 py-3 rounded-xl flex items-center justify-center gap-2 disabled:opacity-30">
+                                <i data-lucide="download" class="w-5 h-5"></i> Export
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 md:p-8">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-3">
+                            <h2 class="text-xl md:text-2xl font-bold text-white">Previous Medical Records</h2>
+                            ${(state.selectedPatient.notes || []).length > 0 ? `
+                                <div class="flex flex-col md:flex-row gap-2 md:gap-3 w-full md:w-auto">
+                                    <button onclick="exportAllNotesToWord()" class="btn-primary px-4 md:px-6 py-2 rounded-lg flex items-center justify-center gap-2 text-sm md:text-base">
+                                        <i data-lucide="file-text" class="w-4 h-4 md:w-5 md:h-5"></i> Export to Word
+                                    </button>
+                                    <button onclick="exportAllNotesToPDF()" class="btn-primary px-4 md:px-6 py-2 rounded-lg flex items-center justify-center gap-2 text-sm md:text-base">
+                                        <i data-lucide="file-down" class="w-4 h-4 md:w-5 md:h-5"></i> Export to PDF
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${(state.selectedPatient.notes || []).length > 0 ? `
+                            <div class="space-y-6">
+                                ${[...(state.selectedPatient.notes || [])].reverse().map(note => `
+                                    <div class="bg-white/5 border-l-4 border-emerald-400 pl-4 md:pl-6 py-4 rounded-r-lg relative group">
+                                        <div class="absolute top-4 right-2 md:right-4 flex gap-2 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                                            <button onclick='editNote(${JSON.stringify(note)})' 
+                                                class="btn-secondary p-2 rounded-lg">
+                                                <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                            </button>
+                                            <button onclick="deleteNoteById('${note.id}')" 
+                                                class="btn-secondary p-2 rounded-lg hover:bg-red-500/20">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                        <p class="text-sm text-emerald-400 font-semibold mb-3">${new Date(note.date).toLocaleDateString()}</p>
+                                        <p class="text-white whitespace-pre-wrap text-base md:text-lg leading-relaxed pr-20 md:pr-24">${note.content}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="text-gray-300 italic text-base md:text-lg">No previous medical records</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderClientModal() {
+            if (!state.showClientModal) return '';
+
+            const client = state.editingClient;
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50" onclick="closeModal(event)">
+                    <div class="glass-card rounded-2xl p-8 max-w-md w-full" onclick="event.stopPropagation()">
+                        <h2 class="text-3xl font-bold text-white mb-6">${client ? 'Edit' : 'Add'} Client</h2>
+                        <form onsubmit="submitClient(event)">
+                            <div class="mb-6">
+                                <label class="block text-white font-semibold mb-3 text-lg">Client Name</label>
+                                <input type="text" id="client-name" value="${client?.name || ''}" required
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-6">
+                                <label class="block text-white font-semibold mb-3 text-lg">Phone Number</label>
+                                <input type="tel" id="client-phone" value="${client?.phone || ''}"
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-8">
+                                <label class="block text-white font-semibold mb-3 text-lg">Email Address</label>
+                                <input type="email" id="client-email" value="${client?.email || ''}"
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="flex gap-3">
+                                <button type="submit" class="flex-1 btn-primary px-6 py-3 rounded-xl font-semibold text-lg">Save</button>
+                                <button type="button" onclick="closeClientModal()" class="flex-1 btn-secondary px-6 py-3 rounded-xl">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPatientModal() {
+            if (!state.showPatientModal) return '';
+
+            const patient = state.editingPatient;
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50 overflow-y-auto" onclick="closeModal(event)">
+                    <div class="glass-card rounded-2xl p-8 max-w-md w-full my-8" onclick="event.stopPropagation()">
+                        <h2 class="text-3xl font-bold text-white mb-6">${patient ? 'Edit' : 'Add'} Patient</h2>
+                        <form onsubmit="submitPatient(event)">
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Patient Name</label>
+                                <input type="text" id="patient-name" value="${patient?.name || ''}" required
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Owner Name</label>
+                                <input type="text" id="patient-owner" value="${patient?.owner || ''}" required
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Species</label>
+                                <select id="patient-species" class="w-full px-4 py-3 rounded-xl">
+                                    <option value="">Select species</option>
+                                    <option value="Dog" ${patient?.species === 'Dog' ? 'selected' : ''}>Dog</option>
+                                    <option value="Cat" ${patient?.species === 'Cat' ? 'selected' : ''}>Cat</option>
+                                    <option value="Horse" ${patient?.species === 'Horse' ? 'selected' : ''}>Horse</option>
+                                    <option value="Bird" ${patient?.species === 'Bird' ? 'selected' : ''}>Bird</option>
+                                    <option value="Rabbit" ${patient?.species === 'Rabbit' ? 'selected' : ''}>Rabbit</option>
+                                    <option value="Reptile" ${patient?.species === 'Reptile' ? 'selected' : ''}>Reptile</option>
+                                    <option value="Other" ${patient?.species === 'Other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Breed</label>
+                                <input type="text" id="patient-breed" value="${patient?.breed || ''}"
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Age (years)</label>
+                                <input type="number" id="patient-age" value="${patient?.age || ''}" min="0" step="0.1"
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-white font-semibold mb-3">Weight (kg)</label>
+                                <input type="number" id="patient-weight" value="${patient?.weight || ''}" min="0" step="0.1"
+                                    class="w-full px-4 py-3 rounded-xl">
+                            </div>
+                            <div class="mb-8">
+                                <label class="block text-white font-semibold mb-3">Client</label>
+                                <select id="patient-client" required
+                                    class="w-full px-4 py-3 rounded-xl">
+                                    <option value="">Select a client</option>
+                                    ${state.clients.map(c => `
+                                        <option value="${c.id}" ${patient?.clientId === c.id ? 'selected' : ''}>${c.name}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div class="flex gap-3">
+                                <button type="submit" class="flex-1 btn-primary px-6 py-3 rounded-xl font-semibold text-lg">Save</button>
+                                <button type="button" onclick="closePatientModal()" class="flex-1 btn-secondary px-6 py-3 rounded-xl">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderNoteModal() {
+            if (!state.showNoteModal || !state.editingNote) return '';
+
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50" onclick="closeModal(event)">
+                    <div class="glass-card rounded-2xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <h2 class="text-2xl md:text-3xl font-bold text-white mb-4 md:mb-6">Edit Medical Record</h2>
+                        <form onsubmit="submitNote(event)">
+                            <div class="mb-4 md:mb-6">
+                                <label class="block text-white font-semibold mb-3 text-base md:text-lg">Date</label>
+                                <p class="text-gray-200 text-base md:text-lg">${new Date(state.editingNote.date).toLocaleDateString()}</p>
+                            </div>
+                            <div class="mb-6 md:mb-8">
+                                <label class="block text-white font-semibold mb-3 text-base md:text-lg">Medical Notes</label>
+                                <textarea id="note-content" required
+                                    class="w-full h-60 md:h-80 p-4 md:p-6 rounded-xl resize-none text-base md:text-lg">${state.editingNote.content}</textarea>
+                            </div>
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <button type="submit" class="flex-1 btn-primary px-6 py-3 rounded-xl font-semibold text-base md:text-lg">Save Changes</button>
+                                <button type="button" onclick="closeNoteModal()" class="flex-1 btn-secondary px-6 py-3 rounded-xl text-base md:text-lg">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function render() {
+            let content = '';
+            
+            if (state.view === 'home') content = renderHome();
+            else if (state.view === 'clients') content = renderClients();
+            else if (state.view === 'patients') content = renderPatients();
+            else if (state.view === 'notes') content = renderNotes();
+
+            content += renderClientModal() + renderPatientModal() + renderNoteModal();
+            
+            document.getElementById('app').innerHTML = content;
+            lucide.createIcons();
+            
+            if (state.view === 'notes') {
+                setTimeout(updateButtonStates, 0);
+            }
+        }
+
+        // Global Functions
+        window.navigateTo = (view) => {
+            state.view = view;
+            state.searchTerm = '';
+            render();
+        };
+
+        window.updateSearch = (value) => {
+            state.searchTerm = value;
+            render();
+        };
+
+        window.selectClient = (client) => {
+            state.selectedClient = client;
+            state.view = 'patients';
+            state.searchTerm = '';
+            render();
+        };
+
+        window.backFromPatients = () => {
+            state.view = state.selectedClient ? 'clients' : 'home';
+            state.selectedClient = null;
+            state.searchTerm = '';
+            render();
+        };
+
+        window.selectPatient = (patient) => {
+            state.selectedPatient = patient;
+            state.view = 'notes';
+            state.transcript = '';
+            render();
+        };
+
+        window.backToPatients = () => {
+            state.view = 'patients';
+            state.selectedPatient = null;
+            state.transcript = '';
+            render();
+        };
+
+        window.openClientModal = () => {
+            state.editingClient = null;
+            state.showClientModal = true;
+            render();
+        };
+
+        window.editClient = (client) => {
+            state.editingClient = client;
+            state.showClientModal = true;
+            render();
+        };
+
+        window.closeClientModal = () => {
+            state.showClientModal = false;
+            state.editingClient = null;
+            render();
+        };
+
+        window.submitClient = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('client-name').value.trim();
+            const phone = document.getElementById('client-phone').value.trim();
+            const email = document.getElementById('client-email').value.trim();
+            await addClient({ name, phone, email });
+        };
+
+        window.deleteClientById = (id) => deleteClient(id);
+
+        window.openPatientModal = () => {
+            state.editingPatient = null;
+            state.showPatientModal = true;
+            render();
+        };
+
+        window.editPatient = (patient) => {
+            state.editingPatient = patient;
+            state.showPatientModal = true;
+            render();
+        };
+
+        window.closePatientModal = () => {
+            state.showPatientModal = false;
+            state.editingPatient = null;
+            render();
+        };
+
+        window.submitPatient = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('patient-name').value.trim();
+            const owner = document.getElementById('patient-owner').value.trim();
+            const species = document.getElementById('patient-species').value;
+            const breed = document.getElementById('patient-breed').value.trim();
+            const age = parseFloat(document.getElementById('patient-age').value) || 0;
+            const weight = parseFloat(document.getElementById('patient-weight').value) || 0;
+            const clientId = document.getElementById('patient-client').value;
+            await addPatient({ name, owner, species, breed, age, weight, clientId });
+        };
+
+        window.deletePatientById = (id) => deletePatient(id);
+
+        window.deleteNoteById = (noteId) => deleteNote(noteId);
+
+        window.editNote = (note) => {
+            state.editingNote = note;
+            state.showNoteModal = true;
+            render();
+        };
+
+        window.closeNoteModal = () => {
+            state.showNoteModal = false;
+            state.editingNote = null;
+            render();
+        };
+
+        window.submitNote = async (e) => {
+            e.preventDefault();
+            const content = document.getElementById('note-content').value.trim();
+            if (content && state.editingNote) {
+                await updateNote(state.editingNote.id, content);
+            }
+        };
+
+        window.startRecordingVoice = startRecording;
+        window.stopRecordingVoice = stopRecording;
+        window.updateTranscript = (value) => {
+            state.transcript = value;
+            updateButtonStates();
+        };
+        window.saveNoteToDb = () => {
+            if (state.transcript && state.transcript.trim()) {
+                saveNote();
+            }
+        };
+        window.copyText = () => {
+            if (state.transcript && state.transcript.trim()) {
+                copyToClipboard();
+            }
+        };
+        window.exportReportFile = () => {
+            if (state.transcript && state.transcript.trim()) {
+                exportReport();
+            }
+        };
+        window.exportAllNotesToWord = exportAllNotesToWord;
+        window.exportAllNotesToPDF = exportAllNotesToPDF;
+
+        window.closeModal = (e) => {
+            if (e.target === e.currentTarget) {
+                state.showClientModal = false;
+                state.showPatientModal = false;
+                state.showNoteModal = false;
+                render();
+            }
+        };
+
+        // Initialize App
+        async function init() {
+            initSpeechRecognition();
+            await loadClients();
+            await loadPatients();
+            render();
+        }
+
+        init();
+    </script>
+</body>
+</html>
